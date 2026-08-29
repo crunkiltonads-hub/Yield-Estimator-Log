@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Till & Drill Farms — Yield Estimator Log</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#14171b">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yield Log">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+  :root{
+    --ink: #14171b;
+    --teal: #0EA989;
+    --teal-dark: #0B6B54;
+    --teal-tint: #E4F5F0;
+    --corn: #E2A63B;
+    --corn-dark: #8A6420;
+    --corn-tint: #FBF0DD;
+    --surface: #FFFFFF;
+    --bg-page: #F1F3F4;
+    --line: #E1E5E7;
+    --text: #16191C;
+    --text-dim: #6B7278;
+    --text-faint: #9AA1A6;
+    --danger: #D6493C;
+    --danger-tint: #FBEAE8;
+  }
+  *{ box-sizing: border-box; }
+  body{
+    margin:0;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg-page);
+    color: var(--text);
+    padding: 0 0 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .hero{
+    background: var(--ink);
+    padding: 34px 16px 30px;
+  }
+  .hero-inner{ max-width: 960px; margin: 0 auto; }
+  .wrap{ max-width: 960px; margin: 0 auto; padding: 24px 14px 0; }
+
+  .eyebrow{
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: var(--teal);
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before{
+    content: "";
+    width: 7px; height: 7px;
+    border-radius: 2px;
+    background: var(--teal);
+    display: inline-block;
+  }
+  h1{
+    font-family: 'Poppins', sans-serif;
+    font-size: 34px;
+    font-weight: 700;
+    margin: 0;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+  }
+  .sub{
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    color: #9BA6AC;
+    margin-top: 8px;
+  }
+
+  .crop-toggle{
+    display: inline-flex;
+    margin-top: 18px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 999px;
+    padding: 4px;
+    gap: 4px;
+  }
+  .crop-toggle button{
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 9px 22px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: #C7CDD1;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .crop-toggle button.active.soy{ background: var(--teal); color: #ffffff; }
+  .crop-toggle button.active.corn{ background: var(--corn); color: #2b1a02; }
+
+  .card{
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(20,23,27,0.04);
+  }
+  .card h2{
+    font-family: 'Poppins', sans-serif;
+    font-size: 17px;
+    color: var(--text);
+    margin: 0 0 16px 0;
+    display:flex; align-items:center; gap:9px;
+    font-weight: 700;
+  }
+  .card h2::before{ content:""; width:9px; height:9px; border-radius: 50%; background: var(--teal); display:inline-block; }
+  .card.corn-mode h2::before{ background: var(--corn); }
+
+  .field-row{ display: grid; grid-template-columns: 1fr; gap: 14px; }
+  .field{ display:flex; flex-direction: column; gap:6px; }
+  label{ font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+  label .hint{ font-weight: 400; font-size: 11.5px; color: var(--text-faint); display:block; margin-top: 3px; text-transform: none; letter-spacing: 0; }
+  input[type=number], input[type=text], input[type=date], select, textarea{
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    font-weight: 500;
+    padding: 10px 12px;
+    border: 1.5px solid var(--line);
+    border-radius: 7px;
+    background: #F8F9FA;
+    color: var(--text);
+    width: 100%;
+  }
+  textarea{ font-weight: 400; resize: vertical; min-height: 44px; }
+  input::placeholder, textarea::placeholder{ color: var(--text-faint); font-weight: 400; }
+  input:focus, select:focus, textarea:focus{
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px var(--teal-tint);
+    background: #ffffff;
+  }
+  .corn-mode input:focus, .corn-mode select:focus, .corn-mode textarea:focus{
+    border-color: var(--corn);
+    box-shadow: 0 0 0 3px var(--corn-tint);
+  }
+  select:disabled{ background: var(--bg-page); color: var(--text-faint); cursor: not-allowed; }
+  @media (min-width: 640px){
+    .field-row.cols-2{ grid-template-columns: 1fr 1fr; }
+    .field-row.cols-3{ grid-template-columns: 1fr 1fr 1fr; }
+    .field-row.cols-4{ grid-template-columns: 1fr 1fr 1fr 1fr; }
+  }
+
+  .preview-table{ width:100%; border-collapse: collapse; margin-top: 14px; }
+  .preview-table th, .preview-table td{ text-align:left; padding: 10px 8px; font-family:'Inter',sans-serif; font-size: 13.5px; }
+  .preview-table thead th{ border-bottom: 1.5px solid var(--line); text-transform: uppercase; letter-spacing:0.06em; font-size:10.5px; color: var(--text-faint); font-weight: 700; }
+  .preview-table tbody tr{ border-bottom: 1px solid var(--line); }
+  .preview-table .bu{ font-weight:700; font-size: 15px; color: var(--teal-dark); }
+  .corn-mode .preview-table .bu{ color: var(--corn-dark); }
+
+  .btn-row{ display:flex; gap:10px; margin-top: 18px; flex-wrap: wrap; }
+  button.action{
+    font-family: 'Inter', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 12px 22px;
+    border-radius: 8px;
+    border: 1.5px solid var(--teal);
+    background: var(--teal);
+    color: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  button.action:hover{ background: var(--teal-dark); border-color: var(--teal-dark); }
+  button.action.secondary{ background: transparent; color: var(--text-dim); border-color: var(--line); }
+  button.action.secondary:hover{ background: var(--bg-page); color: var(--text); }
+  .corn-mode button.action:not(.secondary){ background: var(--corn); border-color: var(--corn); color: #2b1a02; }
+  .corn-mode button.action:not(.secondary):hover{ background: #c98f2e; border-color: #c98f2e; }
+
+  button.danger-link{
+    background: none; border: 1.5px solid var(--line); color: var(--text-dim);
+    text-decoration: none; padding: 4px 10px; font-size: 11.5px;
+    cursor: pointer; font-family: 'Inter', sans-serif; font-weight: 600;
+    border-radius: 6px;
+  }
+  button.danger-link:hover{ background: var(--danger-tint); border-color: var(--danger); color: var(--danger); }
+
+  .filters{ display:flex; gap:10px; flex-wrap: wrap; margin-bottom: 16px; }
+  .filters select{ width: auto; min-width: 140px; }
+
+  .log-table{ width:100%; border-collapse: collapse; }
+  .log-table th, .log-table td{ text-align:left; padding: 12px 10px; font-size: 13.5px; font-family: 'Inter', sans-serif; vertical-align: top; }
+  .log-table thead th{ border-bottom: 1.5px solid var(--line); text-transform: uppercase; letter-spacing:0.05em; font-size: 10.5px; color: var(--text-faint); font-weight: 700; }
+  .log-table tbody tr{ border-bottom: 1px solid var(--line); }
+  .log-table tbody tr:hover{ background: var(--bg-page); }
+  .field-name{ font-family: 'Poppins', sans-serif; font-weight: 700; color: var(--text); font-size: 14.5px; }
+  .farm-tag{ font-size: 10.5px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px; font-weight: 600; }
+  .crop-tag{
+    display:inline-block; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 2px 8px; border-radius: 999px; font-weight: 700; margin-left: 7px;
+    font-family: 'Inter', sans-serif;
+  }
+  .crop-tag.soy{ background: var(--teal-tint); color: var(--teal-dark); }
+  .crop-tag.corn{ background: var(--corn-tint); color: var(--corn-dark); }
+  .crop-tag.scouted{ background: var(--bg-page); color: var(--text-dim); border: 1px solid var(--line); }
+  .est-yield{ font-weight: 700; font-size: 14.5px; }
+  .actual-yield{ color: var(--teal-dark); font-weight: 700; font-size: 14.5px; }
+  .no-actual{ color: var(--text-faint); font-style: italic; font-family: 'Inter', sans-serif; font-size: 12px; }
+  .notes-cell{ font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--text-dim); max-width: 150px; }
+  .empty-state{ font-family: 'Inter', sans-serif; font-style: italic; color: var(--text-faint); padding: 24px 0; text-align: center; }
+  .row-actions{ display:flex; gap: 8px; }
+  .status-msg{ font-family: 'Inter', sans-serif; font-size: 12.5px; color: var(--teal-dark); margin-top: 10px; min-height: 16px; font-weight: 600; }
+  .status-msg.error{ color: var(--danger); }
+</style>
+</head>
+<body>
+<div class="hero">
+  <div class="hero-inner">
+    <div class="eyebrow">Till &amp; Drill Farms</div>
+    <h1>Yield Estimator Log</h1>
+    <div class="sub">Corn &amp; soybean population estimates, saved by farm, field, and year</div>
+    <div class="crop-toggle">
+      <button id="soyToggle" class="active soy" data-crop="soy">Soybeans</button>
+      <button id="cornToggle" class="corn" data-crop="corn">Corn</button>
+    </div>
+  </div>
+</div>
+<div class="wrap">
+
+  <div class="card" id="setupCard">
+    <h2>One-time Setup</h2>
+    <div class="field-row">
+      <div class="field">
+        <label for="scriptUrlInput">Google Apps Script Web App URL
+          <span class="hint">paste the deployment URL from Apps Script here — saved in this browser</span>
+        </label>
+        <input type="text" id="scriptUrlInput" placeholder="https://script.google.com/macros/s/XXXXXXXX/exec">
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="action" id="saveScriptUrlBtn">Connect</button>
+    </div>
+    <div class="status-msg" id="setupStatus"></div>
+  </div>
+
+  <div class="card" id="formCard">
+    <h2 id="formTitle">New Entry</h2>
+    <div class="field-row cols-4">
+      <div class="field">
+        <label for="farmSelect">Farm</label>
+        <select id="farmSelect"></select>
+      </div>
+      <div class="field" id="fieldSelectWrap">
+        <label for="fieldSelect">Field</label>
+        <select id="fieldSelect"></select>
+      </div>
+      <div class="field">
+        <label for="year">Year</label>
+        <input type="number" id="year" min="2000" max="2100" step="1">
+      </div>
+      <div class="field">
+        <label for="sampleDate">Sample Date</label>
+        <input type="date" id="sampleDate">
+      </div>
+    </div>
+
+    <div class="field-row cols-2 custom-farm-row" id="customFarmRow" style="display:none; margin-top:14px;">
+      <div class="field">
+        <label for="customFarmName">Custom Farm Name
+          <span class="hint">someone else's farm — scouting</span>
+        </label>
+        <input type="text" id="customFarmName" placeholder="e.g. Sanderson Bros.">
+      </div>
+      <div class="field">
+        <label for="customFieldName">Custom Field Name</label>
+        <input type="text" id="customFieldName" placeholder="e.g. North 80">
+      </div>
+    </div>
+
+    <!-- Soybean inputs -->
+    <div class="field-row cols-4 crop-inputs soy-inputs" style="margin-top:14px;">
+      <div class="field">
+        <label for="populationSoy">Population
+          <span class="hint">plants/acre</span>
+        </label>
+        <input type="number" id="populationSoy" min="0" step="1000" placeholder="120000">
+      </div>
+      <div class="field">
+        <label for="pods">Pods / Plant</label>
+        <input type="number" id="pods" min="0" step="1" placeholder="40">
+      </div>
+      <div class="field">
+        <label for="seedsPerPod">Seeds / Pod</label>
+        <input type="number" id="seedsPerPod" min="0" step="0.1" placeholder="2.5">
+      </div>
+      <div class="field">
+        <label for="seedSize">Actual Seed Size
+          <span class="hint">seeds/lb (bag tag)</span>
+        </label>
+        <input type="number" id="seedSize" min="0" step="10" placeholder="3000">
+      </div>
+    </div>
+
+    <!-- Corn inputs -->
+    <div class="field-row cols-4 crop-inputs corn-inputs" style="margin-top:14px; display:none;">
+      <div class="field">
+        <label for="populationCorn">Population
+          <span class="hint">plants/acre</span>
+        </label>
+        <input type="number" id="populationCorn" min="0" step="500" placeholder="32000">
+      </div>
+      <div class="field">
+        <label for="kernelsAround">Kernels Around</label>
+        <input type="number" id="kernelsAround" min="0" step="1" placeholder="16">
+      </div>
+      <div class="field">
+        <label for="kernelsLong">Kernels Long</label>
+        <input type="number" id="kernelsLong" min="0" step="1" placeholder="35">
+      </div>
+      <div class="field">
+        <label for="kernelsPerBushel">Kernels / Bushel
+          <span class="hint">estimate factor, ~65,000-100,000</span>
+        </label>
+        <input type="number" id="kernelsPerBushel" min="0" step="1000" placeholder="90000">
+      </div>
+    </div>
+
+    <table class="preview-table" id="previewTable" style="display:none;">
+      <thead><tr><th id="previewRateHeader">Seeds/lb</th><th>Lbs/acre</th><th>Bu/acre</th></tr></thead>
+      <tbody id="previewBody"></tbody>
+    </table>
+
+    <div class="field-row cols-2" style="margin-top:14px;">
+      <div class="field">
+        <label for="actualYield">Actual Harvest Yield
+          <span class="hint">bu/acre — fill in after combine, optional</span>
+        </label>
+        <input type="number" id="actualYield" min="0" step="0.1" placeholder="leave blank until harvest">
+      </div>
+      <div class="field">
+        <label for="notes">Notes
+          <span class="hint">variety, planting date, stress, etc.</span>
+        </label>
+        <textarea id="notes" placeholder="optional"></textarea>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="action" id="saveBtn">Save Entry</button>
+      <button class="action secondary" id="cancelEditBtn" style="display:none;">Cancel Edit</button>
+    </div>
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>Saved Records</h2>
+    <div class="filters">
+      <select id="filterCrop">
+        <option value="">All Crops</option>
+        <option value="soy">Soybeans</option>
+        <option value="corn">Corn</option>
+      </select>
+      <select id="filterYear"><option value="">All Years</option></select>
+      <select id="filterFarm"><option value="">All Farms</option></select>
+    </div>
+    <div id="tableContainer">
+      <div class="empty-state">Loading records…</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Till & Drill Farms farm/field list ----
+  const FARM_FIELDS = {
+    "Backbarn": ["All Backbarn", "Along airstrip"],
+    "Bechtels": ["Behind Woods", "North of Mishey Rd."],
+    "Bit and Bridle": ["All bit"],
+    "Brick/Hacker": ["All Brickbottom", "All of Hill", "Alligator Combined", "Behind Ivans", "Ivan's drive", "Strips to Baily"],
+    "Deal": ["Deals Combined"],
+    "Elliott": ["Big Back/Bowman Combined", "Elliot Front field"],
+    "Gower": ["Along Ruprecht", "Around old barn", "Bottom by creek", "Bottom by drive", "By Steve's house", "Field abv finger", "Field S. of driv"],
+    "Hildreth": ["Hildreth field"],
+    "Kempton": ["Kempton All"],
+    "L Craft": ["L Craft"],
+    "Mark's": ["By new garage"],
+    "Marlow Ashland": ["North and South of Shop", "West 3 Fields"],
+    "Marlow Richland County": ["Along Forbes"],
+    "Porter": ["All Porter"],
+    "Smith Al": ["All of Smiths"],
+    "Smith Dan": ["Back Fields", "Dan Smith Top of hill", "Front Fields"],
+    "Steve C.": ["Steve"],
+    "Stineman": ["All Stineman"],
+    "Teeter": ["Along Morrison", "S Curved combined", "3 Fields Back Drive"],
+    "Thomas": ["Burn't house", "By Dick's house/Horse Pasture", "By Jelloway lake", "Crossroad", "Grassy Knoles Fields"],
+    "Wade": ["East of Road", "West of Road"]
+  };
+
+  const SCRIPT_URL_STORAGE_KEY = 'tdf_script_url';
+  let SCRIPT_URL = localStorage.getItem(SCRIPT_URL_STORAGE_KEY) || '';
+  const SOY_RATES = [2500, 3000, 3500];
+  const CORN_RATES = [65000, 70000, 75000, 80000, 85000, 90000, 95000, 100000];
+  const LBS_PER_BUSHEL = { soy: 60 };
+
+  let records = [];
+  let editingId = null;
+  let currentCrop = 'soy';
+
+  const soyToggle = document.getElementById('soyToggle');
+  const cornToggle = document.getElementById('cornToggle');
+  const formCard = document.getElementById('formCard');
+  const farmSelect = document.getElementById('farmSelect');
+  const fieldSelect = document.getElementById('fieldSelect');
+  const yearInput = document.getElementById('year');
+  const sampleDateInput = document.getElementById('sampleDate');
+  const populationSoyInput = document.getElementById('populationSoy');
+  const podsInput = document.getElementById('pods');
+  const seedsPerPodInput = document.getElementById('seedsPerPod');
+  const seedSizeInput = document.getElementById('seedSize');
+  const populationCornInput = document.getElementById('populationCorn');
+  const kernelsAroundInput = document.getElementById('kernelsAround');
+  const kernelsLongInput = document.getElementById('kernelsLong');
+  const kernelsPerBushelInput = document.getElementById('kernelsPerBushel');
+  const actualYieldInput = document.getElementById('actualYield');
+  const notesInput = document.getElementById('notes');
+  const previewTable = document.getElementById('previewTable');
+  const previewBody = document.getElementById('previewBody');
+  const previewRateHeader = document.getElementById('previewRateHeader');
+  const saveBtn = document.getElementById('saveBtn');
+  const cancelEditBtn = document.getElementById('cancelEditBtn');
+  const formTitle = document.getElementById('formTitle');
+  const statusMsg = document.getElementById('statusMsg');
+  const filterCrop = document.getElementById('filterCrop');
+  const filterYear = document.getElementById('filterYear');
+  const filterFarm = document.getElementById('filterFarm');
+  const tableContainer = document.getElementById('tableContainer');
+
+  function fmt(num, decimals=0){
+    if(!isFinite(num)) return '—';
+    return num.toLocaleString(undefined, {minimumFractionDigits: decimals, maximumFractionDigits: decimals});
+  }
+  function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+  const CUSTOM_FARM_VALUE = '__custom__';
+  const fieldSelectWrap = document.getElementById('fieldSelectWrap');
+  const customFarmRow = document.getElementById('customFarmRow');
+  const customFarmNameInput = document.getElementById('customFarmName');
+  const customFieldNameInput = document.getElementById('customFieldName');
+
+  function populateFarmSelect(){
+    const knownOptions = Object.keys(FARM_FIELDS).sort().map(f => `<option value="${escapeAttr(f)}">${escapeHtml(f)}</option>`).join('');
+    farmSelect.innerHTML = knownOptions + `<option value="${CUSTOM_FARM_VALUE}">+ Scouted / Other Farm…</option>`;
+    updateFarmMode();
+  }
+  function updateFarmMode(){
+    const isCustom = farmSelect.value === CUSTOM_FARM_VALUE;
+    customFarmRow.style.display = isCustom ? 'grid' : 'none';
+    fieldSelectWrap.style.display = isCustom ? 'none' : 'flex';
+    if(!isCustom) populateFieldSelect();
+  }
+  function populateFieldSelect(){
+    const farm = farmSelect.value;
+    const fields = FARM_FIELDS[farm] || [];
+    fieldSelect.innerHTML = fields.map(f => `<option value="${escapeAttr(f)}">${escapeHtml(f)}</option>`).join('');
+  }
+  farmSelect.addEventListener('change', updateFarmMode);
+
+  function currentFarmField(){
+    if(farmSelect.value === CUSTOM_FARM_VALUE){
+      return { farm: customFarmNameInput.value.trim(), field: customFieldNameInput.value.trim() };
+    }
+    return { farm: farmSelect.value, field: fieldSelect.value };
+  }
+
+  function setCrop(crop){
+    currentCrop = crop;
+    soyToggle.classList.toggle('active', crop === 'soy');
+    cornToggle.classList.toggle('active', crop === 'corn');
+    formCard.classList.toggle('corn-mode', crop === 'corn');
+    document.querySelectorAll('.soy-inputs').forEach(el => el.style.display = crop === 'soy' ? 'grid' : 'none');
+    document.querySelectorAll('.corn-inputs').forEach(el => el.style.display = crop === 'corn' ? 'grid' : 'none');
+    previewRateHeader.textContent = crop === 'soy' ? 'Seeds/lb' : 'Kernels/Bu';
+    updatePreview();
+  }
+  soyToggle.addEventListener('click', () => setCrop('soy'));
+  cornToggle.addEventListener('click', () => setCrop('corn'));
+
+  function updatePreview(){
+    let inputs, rates;
+    if(currentCrop === 'soy'){
+      const population = parseFloat(populationSoyInput.value) || 0;
+      const podsVal = parseFloat(podsInput.value) || 0;
+      const seedsPerPodVal = parseFloat(seedsPerPodInput.value) || 0;
+      if(population <= 0 || podsVal <= 0 || seedsPerPodVal <= 0){ previewTable.style.display = 'none'; return; }
+      const totalSeeds = population * podsVal * seedsPerPodVal;
+      rates = SOY_RATES;
+      inputs = totalSeeds;
+    } else {
+      const population = parseFloat(populationCornInput.value) || 0;
+      const aroundVal = parseFloat(kernelsAroundInput.value) || 0;
+      const longVal = parseFloat(kernelsLongInput.value) || 0;
+      if(population <= 0 || aroundVal <= 0 || longVal <= 0){ previewTable.style.display = 'none'; return; }
+      const totalKernels = population * aroundVal * longVal;
+      rates = CORN_RATES;
+      inputs = totalKernels;
+    }
+    previewTable.style.display = '';
+    previewBody.innerHTML = '';
+    rates.forEach(rate => {
+      if(currentCrop === 'soy'){
+        const lbsPerAcre = inputs / rate;
+        const buPerAcre = lbsPerAcre / LBS_PER_BUSHEL.soy;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${fmt(rate)}</td><td>${fmt(lbsPerAcre)} lbs</td><td class="bu">${fmt(buPerAcre,1)} bu</td>`;
+        previewBody.appendChild(tr);
+      } else {
+        const buPerAcre = inputs / rate;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${fmt(rate)}</td><td>&mdash;</td><td class="bu">${fmt(buPerAcre,1)} bu</td>`;
+        previewBody.appendChild(tr);
+      }
+    });
+  }
+  [populationSoyInput, podsInput, seedsPerPodInput, populationCornInput, kernelsAroundInput, kernelsLongInput].forEach(el => {
+    el.addEventListener('input', updatePreview);
+  });
+
+  function calcEstimate(crop, a, b, c, rate){
+    const total = a * b * c;
+    if(crop === 'soy'){
+      const lbsPerAcre = rate > 0 ? total / rate : 0;
+      return lbsPerAcre / LBS_PER_BUSHEL.soy;
+    }
+    return rate > 0 ? total / rate : 0;
+  }
+
+  function setStatus(msg, isError=false){
+    statusMsg.textContent = msg;
+    statusMsg.className = 'status-msg' + (isError ? ' error' : '');
+    if(msg) setTimeout(() => { if(statusMsg.textContent === msg) statusMsg.textContent = ''; }, 3500);
+  }
+
+  async function loadRecords(){
+    if(!SCRIPT_URL){ records = []; renderFilters(); renderTable(); return; }
+    try{
+      tableContainer.innerHTML = '<div class="empty-state">Loading records…</div>';
+      const res = await fetch(SCRIPT_URL + '?action=list');
+      const data = await res.json();
+      records = (data && data.ok && data.records) ? data.records : [];
+    }catch(e){
+      records = [];
+      setStatus('Could not load records — check your connection.', true);
+    }
+    renderFilters();
+    renderTable();
+  }
+
+  async function saveRecordRemote(record){
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'save', record })
+      });
+      const data = await res.json();
+      if(!data || !data.ok){ setStatus('Save failed — please try again.', true); return null; }
+      return data.record;
+    }catch(e){
+      setStatus('Save failed — check your connection.', true);
+      return null;
+    }
+  }
+
+  async function deleteRecordRemote(id){
+    try{
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'delete', id })
+      });
+      const data = await res.json();
+      return !!(data && data.ok);
+    }catch(e){
+      setStatus('Delete failed — check your connection.', true);
+      return false;
+    }
+  }
+
+  function resetForm(){
+    editingId = null;
+    populateFarmSelect();
+    customFarmNameInput.value = '';
+    customFieldNameInput.value = '';
+    yearInput.value = new Date().getFullYear();
+    sampleDateInput.value = todayISO();
+    populationSoyInput.value = '';
+    podsInput.value = '';
+    seedsPerPodInput.value = '';
+    seedSizeInput.value = '';
+    populationCornInput.value = '';
+    kernelsAroundInput.value = '';
+    kernelsLongInput.value = '';
+    kernelsPerBushelInput.value = '';
+    actualYieldInput.value = '';
+    notesInput.value = '';
+    previewTable.style.display = 'none';
+    formTitle.textContent = 'New Entry';
+    cancelEditBtn.style.display = 'none';
+    saveBtn.textContent = 'Save Entry';
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    const { farm, field } = currentFarmField();
+    const year = parseInt(yearInput.value, 10);
+    if(!farm || !field || !year){
+      setStatus(farmSelect.value === CUSTOM_FARM_VALUE
+        ? 'Fill in the custom farm name, field name, and year.'
+        : 'Select a farm, field, and year.', true);
+      return;
+    }
+
+    let population, b, c, rate, estYield;
+    if(currentCrop === 'soy'){
+      population = parseFloat(populationSoyInput.value);
+      b = parseFloat(podsInput.value);
+      c = parseFloat(seedsPerPodInput.value);
+      rate = parseFloat(seedSizeInput.value);
+      if(!population || !b || !c || !rate){
+        setStatus('Fill in population, pods/plant, seeds/pod, and actual seed size.', true);
+        return;
+      }
+    } else {
+      population = parseFloat(populationCornInput.value);
+      b = parseFloat(kernelsAroundInput.value);
+      c = parseFloat(kernelsLongInput.value);
+      rate = parseFloat(kernelsPerBushelInput.value);
+      if(!population || !b || !c || !rate){
+        setStatus('Fill in population, kernels around, kernels long, and kernels/bushel.', true);
+        return;
+      }
+    }
+    estYield = calcEstimate(currentCrop, population, b, c, rate);
+    const actualYieldVal = actualYieldInput.value ? parseFloat(actualYieldInput.value) : null;
+
+    if(!SCRIPT_URL){
+      setStatus('Connect a Google Sheet first — see setup above.', true);
+      return;
+    }
+
+    const record = {
+      id: editingId || undefined,
+      crop: currentCrop, farm, field, year,
+      scouted: farmSelect.value === CUSTOM_FARM_VALUE,
+      sampleDate: sampleDateInput.value || null,
+      population, b, c, rate,
+      estYield, actualYield: actualYieldVal,
+      notes: notesInput.value.trim(),
+      createdAt: editingId ? (records.find(r=>r.id===editingId)||{}).createdAt : undefined
+    };
+
+    saveBtn.disabled = true;
+    const saved = await saveRecordRemote(record);
+    saveBtn.disabled = false;
+
+    if(saved){
+      if(editingId){
+        records = records.map(r => r.id === editingId ? saved : r);
+      }else{
+        records.push(saved);
+      }
+      setStatus(editingId ? 'Entry updated.' : 'Entry saved.');
+      resetForm();
+      renderFilters();
+      renderTable();
+    }
+  });
+
+  cancelEditBtn.addEventListener('click', resetForm);
+
+  function startEdit(id){
+    const r = records.find(x => x.id === id);
+    if(!r) return;
+    editingId = id;
+    setCrop(r.crop);
+    populateFarmSelect();
+    if(r.scouted || !FARM_FIELDS[r.farm]){
+      farmSelect.value = CUSTOM_FARM_VALUE;
+      updateFarmMode();
+      customFarmNameInput.value = r.farm;
+      customFieldNameInput.value = r.field;
+    }else{
+      farmSelect.value = r.farm;
+      updateFarmMode();
+      fieldSelect.value = r.field;
+    }
+    yearInput.value = r.year;
+    sampleDateInput.value = r.sampleDate || todayISO();
+    if(r.crop === 'soy'){
+      populationSoyInput.value = r.population;
+      podsInput.value = r.b;
+      seedsPerPodInput.value = r.c;
+      seedSizeInput.value = r.rate;
+    } else {
+      populationCornInput.value = r.population;
+      kernelsAroundInput.value = r.b;
+      kernelsLongInput.value = r.c;
+      kernelsPerBushelInput.value = r.rate;
+    }
+    actualYieldInput.value = r.actualYield !== null && r.actualYield !== undefined ? r.actualYield : '';
+    notesInput.value = r.notes || '';
+    updatePreview();
+    formTitle.textContent = 'Edit Entry — ' + r.field + ' (' + r.year + ')';
+    cancelEditBtn.style.display = '';
+    saveBtn.textContent = 'Update Entry';
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  async function deleteRecord(id){
+    const ok = await deleteRecordRemote(id);
+    if(ok){
+      records = records.filter(r => r.id !== id);
+      setStatus('Entry deleted.');
+      renderFilters();
+      renderTable();
+    }
+  }
+
+  function renderFilters(){
+    const years = [...new Set(records.map(r => r.year))].sort((a,b) => b-a);
+    const farms = [...new Set(records.map(r => r.farm))].sort();
+    const prevYear = filterYear.value, prevFarm = filterFarm.value, prevCrop = filterCrop.value;
+
+    filterYear.innerHTML = '<option value="">All Years</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    filterFarm.innerHTML = '<option value="">All Farms</option>' + farms.map(f => `<option value="${escapeAttr(f)}">${escapeHtml(f)}</option>`).join('');
+
+    filterYear.value = years.includes(parseInt(prevYear)) ? prevYear : '';
+    filterFarm.value = farms.includes(prevFarm) ? prevFarm : '';
+    filterCrop.value = prevCrop;
+  }
+  filterCrop.addEventListener('change', renderTable);
+  filterYear.addEventListener('change', renderTable);
+  filterFarm.addEventListener('change', renderTable);
+
+  function renderTable(){
+    let filtered = records.slice();
+    if(filterCrop.value) filtered = filtered.filter(r => r.crop === filterCrop.value);
+    if(filterYear.value) filtered = filtered.filter(r => String(r.year) === filterYear.value);
+    if(filterFarm.value) filtered = filtered.filter(r => r.farm === filterFarm.value);
+
+    filtered.sort((a,b) => b.year - a.year || a.farm.localeCompare(b.farm) || a.field.localeCompare(b.field));
+
+    if(filtered.length === 0){
+      tableContainer.innerHTML = '<div class="empty-state">No records yet — save your first entry above.</div>';
+      return;
+    }
+
+    const labels = {
+      soy: { b: 'Pods/Plant', c: 'Seeds/Pod', rate: 'Seed Size' },
+      corn: { b: 'Kernels Around', c: 'Kernels Long', rate: 'Kernels/Bu' }
+    };
+
+    let html = '<table class="log-table"><thead><tr>' +
+      '<th>Field</th><th>Year</th><th>Population</th><th>B</th><th>C</th><th>Rate</th><th>Est. Yield</th><th>Actual</th><th>Notes</th><th></th>' +
+      '</tr></thead><tbody>';
+
+    filtered.forEach(r => {
+      const lbl = labels[r.crop];
+      const accent = r.crop === 'corn' ? 'var(--corn)' : 'var(--soy)';
+      html += `<tr style="border-left:3px solid ${accent};">
+        <td><div class="field-name">${escapeHtml(r.field)}<span class="crop-tag ${r.crop}">${r.crop === 'soy' ? 'Soy' : 'Corn'}</span>${r.scouted ? '<span class="crop-tag scouted">Scouted</span>' : ''}</div><div class="farm-tag">${escapeHtml(r.farm)}</div></td>
+        <td>${r.year}</td>
+        <td>${fmt(r.population)}</td>
+        <td>${fmt(r.b, r.crop==='corn'?2:0)}<div class="farm-tag">${lbl.b}</div></td>
+        <td>${fmt(r.c)}<div class="farm-tag">${lbl.c}</div></td>
+        <td>${fmt(r.rate)}<div class="farm-tag">${lbl.rate}</div></td>
+        <td class="est-yield" style="color:${accent};">${fmt(r.estYield, 1)} bu</td>
+        <td>${r.actualYield !== null && r.actualYield !== undefined ? '<span class="actual-yield">' + fmt(r.actualYield, 1) + ' bu</span>' : '<span class="no-actual">pending</span>'}</td>
+        <td class="notes-cell">${escapeHtml(r.notes || '')}</td>
+        <td><div class="row-actions">
+          <button class="danger-link" data-action="edit" data-id="${r.id}">Edit</button>
+          <button class="danger-link" data-action="delete" data-id="${r.id}">Delete</button>
+        </div></td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    tableContainer.innerHTML = html;
+
+    tableContainer.querySelectorAll('button[data-action="edit"]').forEach(btn => btn.addEventListener('click', () => startEdit(btn.dataset.id)));
+    tableContainer.querySelectorAll('button[data-action="delete"]').forEach(btn => btn.addEventListener('click', () => { if(confirm('Delete this record?')) deleteRecord(btn.dataset.id); }));
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+  function escapeAttr(str){ return escapeHtml(str).replace(/"/g, '&quot;'); }
+
+  // ---- Setup / connection ----
+  const setupCard = document.getElementById('setupCard');
+  const scriptUrlInput = document.getElementById('scriptUrlInput');
+  const saveScriptUrlBtn = document.getElementById('saveScriptUrlBtn');
+  const setupStatus = document.getElementById('setupStatus');
+
+  function refreshConnectionUI(){
+    const connected = !!SCRIPT_URL;
+    scriptUrlInput.value = SCRIPT_URL;
+    saveScriptUrlBtn.textContent = connected ? 'Update Connection' : 'Connect';
+    setupStatus.textContent = connected ? 'Connected to your Google Sheet.' : 'Not connected yet — paste your Apps Script URL above.';
+    setupStatus.className = 'status-msg';
+  }
+
+  saveScriptUrlBtn.addEventListener('click', () => {
+    const url = scriptUrlInput.value.trim();
+    if(!url.startsWith('https://script.google.com/')){
+      setupStatus.textContent = 'That doesn\'t look like a Google Apps Script URL.';
+      setupStatus.className = 'status-msg error';
+      return;
+    }
+    SCRIPT_URL = url;
+    localStorage.setItem(SCRIPT_URL_STORAGE_KEY, url);
+    setupStatus.textContent = 'Connected.';
+    setupStatus.className = 'status-msg';
+    refreshConnectionUI();
+    loadRecords();
+  });
+
+  // init
+  sampleDateInput.value = todayISO();
+  yearInput.value = new Date().getFullYear();
+  populateFarmSelect();
+  setCrop('soy');
+  refreshConnectionUI();
+  loadRecords();
+</script>
+</body>
+</html>
